@@ -41,7 +41,7 @@ void check_if_null(const void *ptr)
 {
     if(ptr == NULL) 
     {
-        error_log("Error: Array is NULL\n");
+        error_log("\nError: Pointer is NULL\n");
         exit(1);
     }
 }
@@ -55,8 +55,8 @@ void clear_stdin() {
 
 bool read_int(const char *string,int *p) 
 {
-    assert(string != NULL);
-    assert(p != NULL);
+    check_if_null(string);
+    check_if_null(p);
 
     printf("%s",string);
 
@@ -78,8 +78,8 @@ bool read_int(const char *string,int *p)
 
 bool read_double(const char *string,double *p) 
 {
-    assert(string != NULL);
-    assert(p != NULL);
+    check_if_null(string);
+    check_if_null(p);
 
     printf("%s",string);
 
@@ -100,8 +100,8 @@ bool read_double(const char *string,double *p)
 
 bool read_char(const char *string,char *p) 
 {
-    assert(string != NULL);
-    assert(p != NULL);
+    check_if_null(string);
+    check_if_null(p);
 
     printf("%s",string);
 
@@ -116,8 +116,8 @@ bool read_char(const char *string,char *p)
 
 bool read_string(const char *string,char *p) 
 {
-    assert(string != NULL);
-    assert(p != NULL);
+    check_if_null(string);
+    check_if_null(p);
 
     printf("%s",string);
 
@@ -157,7 +157,8 @@ double clamp_value_double(const double min,const double max,double target)
 
 int min_int(int array[],const size_t len) 
 {
-    assert(array != NULL);
+    check_if_null(array);
+
     int min = 400000000;
 
     for(size_t i = 0; i < len; ++i) 
@@ -169,7 +170,8 @@ int min_int(int array[],const size_t len)
 
 double min_double(double array[],const size_t len) 
 {
-    assert(array != NULL);
+    check_if_null(array);
+
     double min = 400000000.0;
 
     for(size_t i = 0; i < len; ++i) 
@@ -181,7 +183,8 @@ double min_double(double array[],const size_t len)
 
 int max_int(int array[],const size_t len) 
 {
-    assert(array != NULL);
+    check_if_null(array);
+
     int max = 400000000;
 
     for(size_t i = 0; i < len; ++i) 
@@ -193,7 +196,8 @@ int max_int(int array[],const size_t len)
 
 double max_double(double array[],const size_t len) 
 {
-    assert(array != NULL);
+    check_if_null(array);
+
     double max = -400000000.0;
 
     for(size_t i = 0; i < len; ++i) 
@@ -352,7 +356,7 @@ double max_double(double array[],const size_t len)
                                                                          \
         while(p1 < p2) {                                                 \
                                                                          \
-            typeof(*array->data) temp = (array)->data[p1];               \
+            typeof((array)->data[p1]) temp = (array)->data[p1];          \
             (array)->data[p1] = (array)->data[p2];                       \
             (array)->data[p2] = temp;                                    \
                                                                          \
@@ -435,7 +439,7 @@ typedef struct
 } string_view;
 
 
-string_view cstr(char *data) 
+string_view sv_cstr(char *data) 
 {
     assert(data != NULL);
 
@@ -448,16 +452,16 @@ string_view cstr(char *data)
 
 void sv_set_string(string_view *str,char *data) 
 {
-    assert(str != NULL);
-    assert(data != NULL);
+    check_if_null(str);
+    check_if_null(data);
     str->data = data;
     str->len = strlen(data);
 }
 
 void sv_swap_stringv(string_view *str,string_view *str2)
 {
-    assert(str != NULL);
-    assert(str2 != NULL);
+    check_if_null(str);
+    check_if_null(str2);
     string_view temp;
     sv_set_string(&temp,str->data);
     sv_set_string(str,str2->data);
@@ -473,7 +477,7 @@ string_view sv_dummy()
     };
 }
 
-string_view sv_substr(string_view *str,size_t pos_start,size_t pos_end) 
+string_view sv_substr(string_view *str,const size_t pos_start,const size_t pos_end) 
 {
     if(str->len <= pos_start) 
     {
@@ -499,7 +503,7 @@ string_view sv_substr(string_view *str,size_t pos_start,size_t pos_end)
         return sv_dummy();
     }
 
-    assert(str != NULL);
+    check_if_null(str);
     str->data += pos_start;
     string_view s;
     s.len = pos_end - pos_start;
@@ -509,9 +513,9 @@ string_view sv_substr(string_view *str,size_t pos_start,size_t pos_end)
 	
 	
 
-void sv_chop_left(string_view *str,size_t amount) 
+void sv_chop_left(string_view *str,const size_t amount) 
 {
-    assert(str != NULL);
+    check_if_null(str);
     if(amount < 0) 
     {
         error_log("amount to chop_left is lesser then 0 in (sv_chop_left)");
@@ -531,9 +535,9 @@ void sv_chop_left(string_view *str,size_t amount)
     str->len = len;
 }
 
-void sv_chop_right(string_view *str,size_t amount) 
+void sv_chop_right(string_view *str,const size_t amount) 
 {
-    assert(str != NULL);
+    check_if_null(str);
     if(amount < 0) 
     {
         error_log("amount to chop_left is lesser then 0 in (sv_chop_right)");
@@ -551,24 +555,24 @@ void sv_chop_right(string_view *str,size_t amount)
     str->len = len;
 }
 
-char sv_back(string_view *str) 
+char sv_back(const string_view *str) 
 {
-    assert(str != NULL);	
+    check_if_null(str);	
     return str->data[str->len - 1];
 }
 
-char front(string_view *str) 
+char sv_front(const string_view *str) 
 {
-    assert(str != NULL);
+    check_if_null(str);
     return str->data[0];
 }
 
 
 
 
-char sv_at(string_view *str,size_t index) 
+char sv_at(const string_view *str,const size_t index) 
 {
-    assert(str != NULL);
+    check_if_null(str);
     if(index >= str->len) 
     {
         error_log("index is greater or equal to str->len in (sv_at)");
@@ -588,12 +592,13 @@ char sv_at(string_view *str,size_t index)
 typedef struct 
 {
     char *data;
-    size_t len;
+    size_t length;
     size_t capacity;
+    uint8_t element_size;
 }   string;
 
 
-string *string_init(char *data) 
+string *string_init(const char *data) 
 {
     if(data == NULL) 
     {
@@ -620,10 +625,27 @@ string *string_init(char *data)
 
     strncpy(str->data,data,len);
     str->capacity = len * 2;
-    str->len = len;
+    str->length = len;
+    str->data[str->length] = '\0';
+    str->element_size = 1;
 
     ++alloc_counter;
     return str;
+}
+
+void string_set(string *str,const string *str2) 
+{
+    check_if_null(str);
+    check_if_null(str2);
+
+    if(str == str2) 
+    {
+        error_log("passed in the same pointers in (string_set)");
+        return;
+    }
+
+    array_set(str,str2);
+    str->data[str->length] = '\0';
 }
 
 void string_clear(string *str) 
@@ -633,13 +655,13 @@ void string_clear(string *str)
         error_log("str equals NULL in (string_clear)");
         return;
     } 
-    str->len = 0;
+    str->length = 0;
 }
 
-void string_add(string *str,char *data) 
+void string_add(string *str,const char *data) 
 {
     size_t len = strlen(data);
-    if(str->len + len >= str->capacity) 
+    if(str->length + len >= str->capacity) 
     {
         str->capacity *= 2;
         void *p = realloc(p,str->capacity);
@@ -651,13 +673,13 @@ void string_add(string *str,char *data)
         }
         str->data = p;
     }
-    str->len += len;
+    str->length += len;
     strcat(str->data,data);
 }
 
-void string_push(string *str,char element) 
+void string_push(string *str,const char element) 
 {
-    if(str->len >= str->capacity) 
+    if(str->length >= str->capacity) 
     {
         str->capacity *= 2;
         void *p = realloc(p,str->capacity);
@@ -669,10 +691,10 @@ void string_push(string *str,char element)
         }
         str->data = p;
     }
-    str->data[str->len] = element;
+    str->data[str->length] = element;
 }
 
-void string_pop(string *str,size_t amount) 
+void string_pop(string *str,const size_t amount) 
 {
     if(str == NULL) 
     {
@@ -680,17 +702,55 @@ void string_pop(string *str,size_t amount)
         return;
     }
 
-    else if(str->len - amount <= 0) 
+    else if(str->length - amount <= 0) 
     {
         error_log("str->len equals or is lesser then 0 in (string_pop)");
         return;
     }
 
-    str->len -= amount;
-    str->data[str->len + 1] = '\0';
+    str->length -= amount;
+    str->data[str->length + 1] = '\0';
 }
 
+void string_insert(string *str,const size_t index,const char element) 
+{
+    if(index < 0) 
+    {
+        error_log("index is lesser then 0 in (string_insert)");
+        return;
+    }
 
+    else if(index >= str->length) 
+    {
+        error_log("index is greater or equal to str->len in (string_insert)");
+        return;
+    }   
+
+    array_insert(str,index,element);
+}
+
+void string_remove(string *str,const size_t index) 
+{
+
+    if(index < 0) 
+    {
+        error_log("index is lesser then 0 in (string_remove)");
+        return;
+    }
+
+    else if(index >= str->length) 
+    {
+        error_log("index is greater or equal to str->len in (string_remove)");
+        return;
+    }
+
+    array_remove(str,index);    
+}
+
+void string_free(string *str) 
+{
+    free_array(str);
+}
 
 
 void check_if_free() 
