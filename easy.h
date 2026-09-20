@@ -15,25 +15,44 @@ unsigned short alloc_counter = 0;
 
 void success_log(const char *string) 
 {
-    assert(string != NULL);
+    if(string == NULL) 
+    {
+        fprintf(stderr,"\033[31m string equals NULL in (success_log) \33[0m\n"); 
+        return;
+    }
+
     printf("\033[32m%s \33[0m\n",string);
 }
 
 void info_log(const char *string) 
 {
-    assert(string != NULL);
+    if(string == NULL) 
+    {
+        fprintf(stderr,"\033[31m string equals NULL in (info_log) \33[0m\n"); 
+        return;
+    }
+
     printf("\033[34m%s \33[0m\n",string);
 }
 
 void warning_log(const char *string) 
 {
-    assert(string != NULL);
+    if(string == NULL) 
+    {
+        fprintf(stderr,"\033[31m string equals NULL in (warning_log) \33[0m\n"); 
+        return;
+    }
+
     printf("\033[33m%s \33[0m\n",string); 
 }
 
 void error_log(const char *string) 
 {
-    assert(string != NULL);
+    if(string == NULL) 
+    {
+        fprintf(stderr,"\033[31m string equals NULL in (error_log) \33[0m\n"); 
+        return;
+    }
     fprintf(stderr,"\033[31m%s \33[0m\n",string); 
 }
 
@@ -55,8 +74,17 @@ void clear_stdin() {
 
 bool read_int(const char *string,int *p) 
 {
-    check_if_null(string);
-    check_if_null(p);
+    if(string == NULL) 
+    {
+        error_log("string equals NULL in (read_int)");
+        return false;
+    }
+
+    else if(p == NULL) 
+    {
+        error_log("p equals NULL in (read_int)");
+        return false;
+    }
 
     printf("%s",string);
 
@@ -78,8 +106,17 @@ bool read_int(const char *string,int *p)
 
 bool read_double(const char *string,double *p) 
 {
-    check_if_null(string);
-    check_if_null(p);
+    if(string == NULL) 
+    {
+        error_log("string equals NULL in (read_double)");
+        return false;
+    }
+
+    else if(p == NULL) 
+    {
+        error_log("p equals NULL in (read_double)");
+        return false;
+    }
 
     printf("%s",string);
 
@@ -100,8 +137,17 @@ bool read_double(const char *string,double *p)
 
 bool read_char(const char *string,char *p) 
 {
-    check_if_null(string);
-    check_if_null(p);
+    if(string == NULL) 
+    {
+        error_log("string equals NULL in (read_char)");
+        return false;
+    }
+
+    else if(p == NULL) 
+    {
+        error_log("p equals NULL in (read_char)");
+        return false;
+    }
 
     printf("%s",string);
 
@@ -116,8 +162,17 @@ bool read_char(const char *string,char *p)
 
 bool read_string(const char *string,char *p) 
 {
-    check_if_null(string);
-    check_if_null(p);
+    if(string == NULL) 
+    {
+        error_log("string equals NULL in (read_string)");
+        return false;
+    }
+
+    else if(p == NULL) 
+    {
+        error_log("p equals NULL in (read_string)");
+        return false;
+    }
 
     printf("%s",string);
 
@@ -438,10 +493,23 @@ typedef struct
     size_t len;
 } string_view;
 
+string_view sv_dummy() 
+{
+    return (string_view) 
+    {
+        NULL,
+        0
+    };
+}
+
 
 string_view sv_cstr(char *data) 
 {
-    assert(data != NULL);
+    if(data == NULL) 
+    {
+        error_log("data equals NULL in (sv_cstr)");
+        return sv_dummy();
+    }
 
     return (string_view) 
     {
@@ -452,30 +520,55 @@ string_view sv_cstr(char *data)
 
 void sv_set_string(string_view *str,char *data) 
 {
-    check_if_null(str);
-    check_if_null(data);
+    if(str == NULL) 
+    {
+        error_log("str equals NULL in (sv_set_string)");
+        return;
+    }
+
+    else if(data == NULL) 
+    {
+        error_log("data equals NULL in (sv_string_set)");
+        return;
+    }
+
+    else if(str->data == data) 
+    {
+        error_log("same pointers in (sv_string_set)");
+        return;
+    }
+
     str->data = data;
     str->len = strlen(data);
 }
 
-void sv_swap_stringv(string_view *str,string_view *str2)
+void sv_swap_string(string_view *str,string_view *str2)
 {
-    check_if_null(str);
-    check_if_null(str2);
+    if(str == NULL) 
+    {
+        error_log("str equals NULL in (sv_swap_string)");
+        return;
+    }
+
+    else if(str2 == NULL) 
+    {
+        error_log("str2 equals NULL in (sv_swap_string)");
+        return;
+    }
+
+    else if(str == str2) 
+    {
+        error_log("str and str2 are the same pointers in (sv_swap_string)");
+        return;
+    }
+
     string_view temp;
     sv_set_string(&temp,str->data);
     sv_set_string(str,str2->data);
     sv_set_string(str2,temp.data);
 }
 
-string_view sv_dummy() 
-{
-    return (string_view) 
-    {
-        NULL,
-        0
-    };
-}
+
 
 string_view sv_substr(string_view *str,const size_t pos_start,const size_t pos_end) 
 {
@@ -557,13 +650,23 @@ void sv_chop_right(string_view *str,const size_t amount)
 
 char sv_back(const string_view *str) 
 {
-    check_if_null(str);	
+    if(str == NULL) 
+    {
+        error_log("str equals NULL in (sv_front)");
+        exit(1);
+    }
+
     return str->data[str->len - 1];
 }
 
 char sv_front(const string_view *str) 
 {
-    check_if_null(str);
+    if(str == NULL) 
+    {
+        error_log("str equals NULL in (sv_front)");
+        exit(1);
+    }
+
     return str->data[0];
 }
 
@@ -572,20 +675,37 @@ char sv_front(const string_view *str)
 
 char sv_at(const string_view *str,const size_t index) 
 {
-    check_if_null(str);
+    if(str == NULL) 
+    {
+        error_log("str equals NULL in (sv_at)");
+        exit(1);
+    }
+    
     if(index >= str->len) 
     {
         error_log("index is greater or equal to str->len in (sv_at)");
         exit(1);
     }
 
-    else if(index < 0) 
+    return str->data[index];
+}
+
+bool sv_try_at(const string_view *str,const size_t index,char *out) 
+{
+    if(str == NULL || out == NULL) 
     {
-        error_log("index is lesser then 0 in (sv_at)");
-        exit(1);
+        error_log("str or out equals NULL in (sv_try_at)");
+        return false;
+    }
+    
+    if(index >= str->len) 
+    {
+        error_log("index is greater or equal to str->len in (sv_try_at)");
+        return false;
     }
 
-    return str->data[index];
+    *out = str->data[index];
+    return true;
 }
 
 
@@ -635,8 +755,17 @@ string *string_init(const char *data)
 
 void string_set(string *str,const string *str2) 
 {
-    check_if_null(str);
-    check_if_null(str2);
+    if(str == NULL) 
+    {
+        error_log("str equals NULL in (string_set)");
+        return;
+    }
+    
+    else if(str2 == NULL) 
+    {
+        error_log("str2 equals NULL in (string_set)");
+        return;
+    }
 
     if(str == str2) 
     {
