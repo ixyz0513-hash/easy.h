@@ -9,261 +9,61 @@
 #include <assert.h>
 #include <ctype.h>
 
-unsigned short alloc_counter = 0;
+static unsigned short alloc_counter = 0;
 
-// LOG
-
-void success_log(const char *string) 
+typedef struct
 {
-    if(string == NULL) 
-    {
-        fprintf(stderr,"\033[31m string equals NULL in (success_log) \33[0m\n"); 
-        return;
-    }
+    char *data;
+    size_t len;
+} string_view;
 
-    printf("\033[32m%s \33[0m\n",string);
-}
-
-void info_log(const char *string) 
+typedef struct 
 {
-    if(string == NULL) 
-    {
-        fprintf(stderr,"\033[31m string equals NULL in (info_log) \33[0m\n"); 
-        return;
-    }
+    char *data;
+    size_t length;
+    size_t capacity;
+    uint8_t element_size;
+}   string;
 
-    printf("\033[34m%s \33[0m\n",string);
-}
-
-void warning_log(const char *string) 
-{
-    if(string == NULL) 
-    {
-        fprintf(stderr,"\033[31m string equals NULL in (warning_log) \33[0m\n"); 
-        return;
-    }
-
-    printf("\033[33m%s \33[0m\n",string); 
-}
-
-void error_log(const char *string) 
-{
-    if(string == NULL) 
-    {
-        fprintf(stderr,"\033[31m string equals NULL in (error_log) \33[0m\n"); 
-        return;
-    }
-    fprintf(stderr,"\033[31m%s \33[0m\n",string); 
-}
-
-void check_if_null(const void *ptr) 
-{
-    if(ptr == NULL) 
-    {
-        error_log("\nError: Pointer is NULL\n");
-        exit(1);
-    }
-}
-
-//INPUT
-
-void clear_stdin() {
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF);
-}
-
-bool read_int(const char *string,int *p) 
-{
-    if(string == NULL) 
-    {
-        error_log("string equals NULL in (read_int)");
-        return false;
-    }
-
-    else if(p == NULL) 
-    {
-        error_log("p equals NULL in (read_int)");
-        return false;
-    }
-
-    printf("%s",string);
-
-    char buffer[1024];
-    fgets(buffer,sizeof(buffer),stdin);
-
-    char *end = NULL;
-    *p = strtol(buffer,&end,10);
-
-    if(*end != '\n') 
-    {
-        clear_stdin();
-        return false;
-    }
-    
-    
-    return true;
-}
-
-bool read_double(const char *string,double *p) 
-{
-    if(string == NULL) 
-    {
-        error_log("string equals NULL in (read_double)");
-        return false;
-    }
-
-    else if(p == NULL) 
-    {
-        error_log("p equals NULL in (read_double)");
-        return false;
-    }
-
-    printf("%s",string);
-
-    char buffer[1024];
-    fgets(buffer,sizeof(buffer),stdin);
-
-    char *end = NULL;
-    *p = strtod(buffer,&end);
-
-    if(*end != '\n') 
-    {
-        clear_stdin();
-        return false;
-    }
-    
-    return true;
-}
-
-bool read_char(const char *string,char *p) 
-{
-    if(string == NULL) 
-    {
-        error_log("string equals NULL in (read_char)");
-        return false;
-    }
-
-    else if(p == NULL) 
-    {
-        error_log("p equals NULL in (read_char)");
-        return false;
-    }
-
-    printf("%s",string);
-
-    char character;
-    character = getchar();
-
-    *p = character;
-    clear_stdin();
-    
-    return true;
-}
-
-bool read_string(const char *string,char *p) 
-{
-    if(string == NULL) 
-    {
-        error_log("string equals NULL in (read_string)");
-        return false;
-    }
-
-    else if(p == NULL) 
-    {
-        error_log("p equals NULL in (read_string)");
-        return false;
-    }
-
-    printf("%s",string);
-
-    char buffer[1024];
-    fgets(buffer,sizeof(buffer),stdin);
-
-    size_t len = strlen(buffer);
-
-    buffer[len - 1] = '\0';
-
-    strncpy(p,buffer,len);
-    
-    return true;
-}
-
-// math helpers
-
-int clamp_value_int(const int min,const int max,int target) 
-{
-    if(min > target) target = min;
-
-    else if(max < target) target = max;
+void success_log(const char *string);
+void info_log(const char *string);
+void warning_log(const char *string);
+void error_log(const char *string);
+void check_if_null(const void *ptr);
+void clear_stdin(void);
+bool read_int(const char *string,int *p);
+bool read_double(const char *string,double *p);
+bool read_char(const char *string,char *p);
+bool read_string(const char *string,char *p);
+int clamp_value_int(const int min, const int max,int target);
+double clamp_value_double(const double min,const double max,double target);
+int min_int(int array[],const size_t len);
+double min_double(double array[],const size_t len);
+int max_int(int array[],const size_t len);
+double max_double(double array[],const size_t len);
+string_view sv_dummy();
+string_view sv_cstr(char *data);
+void sv_set_string(string_view *str,char *data);
+void sv_swap_string(string_view *str,string_view *str2);
+string_view sv_substr(string_view *str,const size_t pos_start,const size_t pos_end);
+void sv_chop_left(string_view *str,const size_t amount);
+void sv_chop_right(string_view *str,const size_t amount);
+char sv_back(const string_view *str);
+char sv_front(const string_view *str);
+char sv_at(const string_view *str,const size_t index);
+bool sv_try_at(const string_view *str,const size_t index,char *out);
+string *string_init(const char *data);
+void string_set(string *str,const string *str2);
+void string_clear(string *str);
+void string_add(string *str,const char *data);
+void string_push(string *str,const char element);
+void string_pop(string *str,const size_t amount);
+void string_insert(string *str,const size_t index,const char element);
+void string_remove(string *str,const size_t index);
+void string_free(string *str);
+void check_if_free();
 
 
-    return target;
-}
-
-double clamp_value_double(const double min,const double max,double target) 
-{
-    if(min > target) target = min;
-
-    else if(max < target) target = max;
-
-
-    return target;
-}
-
-int min_int(int array[],const size_t len) 
-{
-    check_if_null(array);
-
-    int min = 400000000;
-
-    for(size_t i = 0; i < len; ++i) 
-    {
-        if(array[i] < min) min = array[i];
-    }
-    return min;
-}
-
-double min_double(double array[],const size_t len) 
-{
-    check_if_null(array);
-
-    double min = 400000000.0;
-
-    for(size_t i = 0; i < len; ++i) 
-    {
-        if(array[i] < min) min = array[i];
-    }
-    return min;
-}
-
-int max_int(int array[],const size_t len) 
-{
-    check_if_null(array);
-
-    int max = 400000000;
-
-    for(size_t i = 0; i < len; ++i) 
-    {
-        if(array[i] > max) max = array[i];
-    }
-    return max;
-}
-
-double max_double(double array[],const size_t len) 
-{
-    check_if_null(array);
-
-    double max = -400000000.0;
-
-    for(size_t i = 0; i < len; ++i) 
-    {
-        if(array[i] > max) max = array[i];
-    }
-    return max;
-}
-
-
-// datastructures
 
 //DYNAMIC ARRAY
 
@@ -485,13 +285,261 @@ double max_double(double array[],const size_t len)
 
 #define array_for_each(length,i) for(size_t i = 0; i < length; ++i)
 
+// LOG
 
+#ifdef EASY_IMPLEMENATION
 
-typedef struct
+void success_log(const char *string) 
 {
-    char *data;
-    size_t len;
-} string_view;
+    if(string == NULL) 
+    {
+        fprintf(stderr,"\033[31m string equals NULL in (success_log) \33[0m\n"); 
+        return;
+    }
+
+    printf("\033[32m%s \33[0m\n",string);
+}
+
+void info_log(const char *string) 
+{
+    if(string == NULL) 
+    {
+        fprintf(stderr,"\033[31m string equals NULL in (info_log) \33[0m\n"); 
+        return;
+    }
+
+    printf("\033[34m%s \33[0m\n",string);
+}
+
+void warning_log(const char *string) 
+{
+    if(string == NULL) 
+    {
+        fprintf(stderr,"\033[31m string equals NULL in (warning_log) \33[0m\n"); 
+        return;
+    }
+
+    printf("\033[33m%s \33[0m\n",string); 
+}
+
+void error_log(const char *string) 
+{
+    if(string == NULL) 
+    {
+        fprintf(stderr,"\033[31m string equals NULL in (error_log) \33[0m\n"); 
+        return;
+    }
+    fprintf(stderr,"\033[31m%s \33[0m\n",string); 
+}
+
+void check_if_null(const void *ptr) 
+{
+    if(ptr == NULL) 
+    {
+        error_log("\nError: Pointer is NULL\n");
+        exit(1);
+    }
+}
+
+//INPUT
+
+void clear_stdin(void) {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+
+bool read_int(const char *string,int *p) 
+{
+    if(string == NULL) 
+    {
+        error_log("string equals NULL in (read_int)");
+        return false;
+    }
+
+    else if(p == NULL) 
+    {
+        error_log("p equals NULL in (read_int)");
+        return false;
+    }
+
+    printf("%s",string);
+
+    char buffer[1024];
+    fgets(buffer,sizeof(buffer),stdin);
+
+    char *end = NULL;
+    *p = strtol(buffer,&end,10);
+
+    if(*end != '\n') 
+    {
+        clear_stdin();
+        return false;
+    }
+    
+    
+    return true;
+}
+
+bool read_double(const char *string,double *p) 
+{
+    if(string == NULL) 
+    {
+        error_log("string equals NULL in (read_double)");
+        return false;
+    }
+
+    else if(p == NULL) 
+    {
+        error_log("p equals NULL in (read_double)");
+        return false;
+    }
+
+    printf("%s",string);
+
+    char buffer[1024];
+    fgets(buffer,sizeof(buffer),stdin);
+
+    char *end = NULL;
+    *p = strtod(buffer,&end);
+
+    if(*end != '\n') 
+    {
+        clear_stdin();
+        return false;
+    }
+    
+    return true;
+}
+
+bool read_char(const char *string,char *p) 
+{
+    if(string == NULL) 
+    {
+        error_log("string equals NULL in (read_char)");
+        return false;
+    }
+
+    else if(p == NULL) 
+    {
+        error_log("p equals NULL in (read_char)");
+        return false;
+    }
+
+    printf("%s",string);
+
+    char character;
+    character = getchar();
+
+    *p = character;
+    clear_stdin();
+    
+    return true;
+}
+
+bool read_string(const char *string,char *p) 
+{
+    if(string == NULL) 
+    {
+        error_log("string equals NULL in (read_string)");
+        return false;
+    }
+
+    else if(p == NULL) 
+    {
+        error_log("p equals NULL in (read_string)");
+        return false;
+    }
+
+    printf("%s",string);
+
+    char buffer[1024];
+    fgets(buffer,sizeof(buffer),stdin);
+
+    size_t len = strlen(buffer);
+
+    buffer[len - 1] = '\0';
+
+    strncpy(p,buffer,len);
+    
+    return true;
+}
+
+// math helpers
+
+int clamp_value_int(const int min,const int max,int target) 
+{
+    if(min > target) target = min;
+
+    else if(max < target) target = max;
+
+
+    return target;
+}
+
+double clamp_value_double(const double min,const double max,double target) 
+{
+    if(min > target) target = min;
+
+    else if(max < target) target = max;
+
+
+    return target;
+}
+
+int min_int(int array[],const size_t len) 
+{
+    check_if_null(array);
+
+    int min = array[0];
+
+    for(size_t i = 1; i < len; ++i) 
+    {
+        if(array[i] < min) min = array[i];
+    }
+    return min;
+}
+
+double min_double(double array[],const size_t len) 
+{
+    check_if_null(array);
+
+    double min = array[0];
+
+    for(size_t i = 1; i < len; ++i) 
+    {
+        if(array[i] < min) min = array[i];
+    }
+    return min;
+}
+
+int max_int(int array[],const size_t len) 
+{
+    check_if_null(array);
+
+    int max = array[0];
+
+    for(size_t i = 1; i < len; ++i) 
+    {
+        if(array[i] > max) max = array[i];
+    }
+    return max;
+}
+
+double max_double(double array[],const size_t len) 
+{
+    check_if_null(array);
+
+    double max = array[0];
+
+    for(size_t i = 1; i < len; ++i) 
+    {
+        if(array[i] > max) max = array[i];
+    }
+    return max;
+}
+
+
+// datastructures
 
 string_view sv_dummy() 
 {
@@ -596,7 +644,13 @@ string_view sv_substr(string_view *str,const size_t pos_start,const size_t pos_e
         return sv_dummy();
     }
 
-    check_if_null(str);
+    else if(str == NULL) 
+    {
+        error_log("str equals NULL in (sv_substr)");
+        return sv_dummy();
+    }
+
+    
     str->data += pos_start;
     string_view s;
     s.len = pos_end - pos_start;
@@ -608,21 +662,19 @@ string_view sv_substr(string_view *str,const size_t pos_start,const size_t pos_e
 
 void sv_chop_left(string_view *str,const size_t amount) 
 {
-    check_if_null(str);
-    if(amount < 0) 
+    if(str == NULL) 
     {
-        error_log("amount to chop_left is lesser then 0 in (sv_chop_left)");
+        error_log("str equals NULL in (sv_chop_left)");
         return;
     }
 
-    
+    else if(str->len < amount) 
+    {
+        error_log("str->len is lesser then amount in (sv_chop_right)");
+        return;
+    }
+
     size_t len = str->len - amount;
-
-    if(len < 0) 
-    {
-        error_log("len is lesser then 0 in (sv_chop_left)");
-        return;
-    }
 
     str->data += amount;
     str->len = len;
@@ -630,21 +682,19 @@ void sv_chop_left(string_view *str,const size_t amount)
 
 void sv_chop_right(string_view *str,const size_t amount) 
 {
-    check_if_null(str);
-    if(amount < 0) 
+    if(str == NULL) 
     {
-        error_log("amount to chop_left is lesser then 0 in (sv_chop_right)");
+        error_log("str equals NULL in (sv_chop_left)");
         return;
     }
-    
+
+    else if(str->len < amount) 
+    {
+        error_log("str->len is lesser then amount in (sv_chop_right)");
+        return;
+    }
+
     size_t len = str->len - amount;
-
-    if(len < 0) 
-    {
-        error_log("len is lesser then 0 in (sv_chop_right)");
-        return;
-    }
-
     str->len = len;
 }
 
@@ -707,15 +757,6 @@ bool sv_try_at(const string_view *str,const size_t index,char *out)
     *out = str->data[index];
     return true;
 }
-
-
-typedef struct 
-{
-    char *data;
-    size_t length;
-    size_t capacity;
-    uint8_t element_size;
-}   string;
 
 
 string *string_init(const char *data) 
@@ -887,6 +928,6 @@ void check_if_free()
    if(alloc_counter != 0) fprintf(stderr, "\033[31mMemory leak detected: %d allocations not freed\033[0m\n",alloc_counter);
 }
 
-
+#endif
 
 #endif
