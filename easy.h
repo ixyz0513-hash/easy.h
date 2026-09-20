@@ -157,7 +157,7 @@ double clamp_value_double(const double min,const double max,double target)
 
 int min_int(int array[],const size_t len) 
 {
-
+    assert(array != NULL);
     int min = 400000000;
 
     for(size_t i = 0; i < len; ++i) 
@@ -169,7 +169,7 @@ int min_int(int array[],const size_t len)
 
 double min_double(double array[],const size_t len) 
 {
-
+    assert(array != NULL);
     double min = 400000000.0;
 
     for(size_t i = 0; i < len; ++i) 
@@ -181,7 +181,7 @@ double min_double(double array[],const size_t len)
 
 int max_int(int array[],const size_t len) 
 {
-
+    assert(array != NULL);
     int max = 400000000;
 
     for(size_t i = 0; i < len; ++i) 
@@ -193,7 +193,7 @@ int max_int(int array[],const size_t len)
 
 double max_double(double array[],const size_t len) 
 {
-
+    assert(array != NULL);
     double max = -400000000.0;
 
     for(size_t i = 0; i < len; ++i) 
@@ -446,7 +446,7 @@ string_view cstr(char *data)
     };
 }
 
-void set_stringv(string_view *str,char *data) 
+void sv_set_string(string_view *str,char *data) 
 {
     assert(str != NULL);
     assert(data != NULL);
@@ -454,17 +454,17 @@ void set_stringv(string_view *str,char *data)
     str->len = strlen(data);
 }
 
-void swap_stringv(string_view *str,string_view *str2)
+void sv_swap_stringv(string_view *str,string_view *str2)
 {
     assert(str != NULL);
     assert(str2 != NULL);
     string_view temp;
-    set_stringv(&temp,str->data);
-    set_stringv(str,str2->data);
-    set_stringv(str2,temp.data);
+    sv_set_string(&temp,str->data);
+    sv_set_string(str,str2->data);
+    sv_set_string(str2,temp.data);
 }
 
-string_view dummy() 
+string_view sv_dummy() 
 {
     return (string_view) 
     {
@@ -473,36 +473,30 @@ string_view dummy()
     };
 }
 
-#define str_null() do\
-{                                       \
-    error_log("string_view is NULL");   \
-    return dummy();                     \
-} while(0)
-
-string_view substr(string_view *str,size_t pos_start,size_t pos_end) 
+string_view sv_substr(string_view *str,size_t pos_start,size_t pos_end) 
 {
     if(str->len <= pos_start) 
     {
-        error_log("pos_start is equal or greater then str->len");
-        return dummy();
+        error_log("pos_start is equal or greater then str->len in (sv_substr)");
+        return sv_dummy();
     }
 
     else if(str->len < pos_end) 
     {
-        error_log("pos_end is greater then str->len");
-        return dummy();
+        error_log("pos_end is greater then str->len in (sv_substr)");
+        return sv_dummy();
     }
 
     else if(pos_start < 0) 
     {
-        error_log("pos_start is lesser then 0");
-        return dummy();
+        error_log("pos_start is lesser then 0 in (sv_substr)");
+        return sv_dummy();
     }
 
     else if(pos_end <= pos_start) 
     {
-        error_log("pos_end is equal or lesser then pos_start");
-        return dummy();
+        error_log("pos_end is equal or lesser then pos_start in (sv_substr)");
+        return sv_dummy();
     }
 
     assert(str != NULL);
@@ -515,13 +509,13 @@ string_view substr(string_view *str,size_t pos_start,size_t pos_end)
 	
 	
 
-void chop_left(string_view *str,size_t amount) 
+void sv_chop_left(string_view *str,size_t amount) 
 {
     assert(str != NULL);
     if(amount < 0) 
     {
-        error_log("amount to chop_left is lesser then 0");
-        exit(1);
+        error_log("amount to chop_left is lesser then 0 in (sv_chop_left)");
+        return;
     }
 
     
@@ -529,35 +523,35 @@ void chop_left(string_view *str,size_t amount)
 
     if(len < 0) 
     {
-        error_log("len is lesser then 0");
-        exit(1);
+        error_log("len is lesser then 0 in (sv_chop_left)");
+        return;
     }
-    
+
     str->data += amount;
     str->len = len;
 }
 
-void chop_right(string_view *str,size_t amount) 
+void sv_chop_right(string_view *str,size_t amount) 
 {
     assert(str != NULL);
     if(amount < 0) 
     {
-        error_log("amount to chop_left is lesser then 0");
-        exit(1);
+        error_log("amount to chop_left is lesser then 0 in (sv_chop_right)");
+        return;
     }
     
     size_t len = str->len - amount;
 
     if(len < 0) 
     {
-        error_log("len is lesser then 0");
-        exit(1);
+        error_log("len is lesser then 0 in (sv_chop_right)");
+        return;
     }
 
     str->len = len;
 }
 
-char back(string_view *str) 
+char sv_back(string_view *str) 
 {
     assert(str != NULL);	
     return str->data[str->len - 1];
@@ -572,18 +566,18 @@ char front(string_view *str)
 
 
 
-char at(string_view *str,size_t index) 
+char sv_at(string_view *str,size_t index) 
 {
     assert(str != NULL);
     if(index >= str->len) 
     {
-        error_log("index is greater or equal to str->len");
+        error_log("index is greater or equal to str->len in (sv_at)");
         exit(1);
     }
 
     else if(index < 0) 
     {
-        error_log("index is lesser then 0");
+        error_log("index is lesser then 0 in (sv_at)");
         exit(1);
     }
 
@@ -591,16 +585,119 @@ char at(string_view *str,size_t index)
 }
 
 
+typedef struct 
+{
+    char *data;
+    size_t len;
+    size_t capacity;
+}   string;
+
+
+string *string_init(char *data) 
+{
+    if(data == NULL) 
+    {
+        error_log("data is equal to NULL (string_init)");
+        exit(1);
+    }
+    string *str = malloc(sizeof(string));
+
+    if(str == NULL) 
+    {
+        error_log("str equals NULL from malloc error (string_init)");
+        exit(1);
+    }
+    size_t len = strlen(data);
+
+    str->data = malloc(len * 2);
+
+    if(str->data == NULL) 
+    {
+        free(str);
+        error_log("data equals NULL from malloc error (string_init)");
+        exit(1);
+    }
+
+    strncpy(str->data,data,len);
+    str->capacity = len * 2;
+    str->len = len;
+
+    ++alloc_counter;
+    return str;
+}
+
+void string_clear(string *str) 
+{
+    if(str == NULL) 
+    {
+        error_log("str equals NULL in (string_clear)");
+        return;
+    } 
+    str->len = 0;
+}
+
+void string_add(string *str,char *data) 
+{
+    size_t len = strlen(data);
+    if(str->len + len >= str->capacity) 
+    {
+        str->capacity *= 2;
+        void *p = realloc(p,str->capacity);
+
+        if(!p) 
+        {
+            error_log("p equals NULL because of a realloc error in (string_add)");
+            return;
+        }
+        str->data = p;
+    }
+    str->len += len;
+    strcat(str->data,data);
+}
+
+void string_push(string *str,char element) 
+{
+    if(str->len >= str->capacity) 
+    {
+        str->capacity *= 2;
+        void *p = realloc(p,str->capacity);
+
+        if(!p) 
+        {
+            error_log("p equals NULL because of a realloc error in (string_add)");
+            return;
+        }
+        str->data = p;
+    }
+    str->data[str->len] = element;
+}
+
+void string_pop(string *str,size_t amount) 
+{
+    if(str == NULL) 
+    {
+        error_log("str equals NULL in (string_pop)");
+        return;
+    }
+
+    else if(str->len - amount <= 0) 
+    {
+        error_log("str->len equals or is lesser then 0 in (string_pop)");
+        return;
+    }
+
+    str->len -= amount;
+    str->data[str->len + 1] = '\0';
+}
+
+
 
 
 void check_if_free() 
 {
-   if(alloc_counter != 0) 
-   {
-       fprintf(stderr, "\033[31mMemory leak detected: %d allocations not freed\033[0m\n",alloc_counter);
-       exit(1);
-   }
+   if(alloc_counter != 0) fprintf(stderr, "\033[31mMemory leak detected: %d allocations not freed\033[0m\n",alloc_counter);
 }
+
 
 
 #endif
