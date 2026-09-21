@@ -25,6 +25,12 @@ typedef struct
     uint8_t element_size;
 }   string;
 
+typedef struct 
+{
+    uint8_t error;
+    char result;
+}   char_result;
+
 void success_log(const char *string);
 void info_log(const char *string);
 void warning_log(const char *string);
@@ -41,6 +47,8 @@ int min_int(int array[],const size_t len);
 double min_double(double array[],const size_t len);
 int max_int(int array[],const size_t len);
 double max_double(double array[],const size_t len);
+bool check_sign(int value);
+char_result char_error();
 string_view sv_dummy();
 string_view sv_cstr(char *data);
 void sv_set_string(string_view *str,char *data);
@@ -48,22 +56,26 @@ void sv_swap_string(string_view *str,string_view *str2);
 string_view sv_substr(string_view *str,const size_t pos_start,const size_t pos_end);
 void sv_chop_left(string_view *str,const size_t amount);
 void sv_chop_right(string_view *str,const size_t amount);
-char sv_back(const string_view *str);
-char sv_front(const string_view *str);
-char sv_at(const string_view *str,const size_t index);
+char_result sv_back(const string_view *str);
+char_result sv_front(const string_view *str);
+char_result sv_at(const string_view *str,const size_t index);
 bool sv_try_at(const string_view *str,const size_t index,char *out);
 string *string_init(const char *data);
-void string_set(string *str,const string *str2);
+void string_set(string *str,string *str2);
+void string_swap(string *str, string *str2);
 void string_clear(string *str);
 void string_add(string *str,const char *data);
 void string_push(string *str,const char element);
 void string_pop(string *str,const size_t amount);
 void string_insert(string *str,const size_t index,const char element);
 void string_remove(string *str,const size_t index);
+void resize_string(string *str,size_t capacity);
 void string_free(string *str);
 void check_if_free();
 
-
+#define PRINT_DEBUGSTR(str) printf("string: %s   length: %zu   capacity: %zu   element_size: %u\n",(str)->data,(str)->length,(str)->capacity,(str)->element_size);
+#define SUCCESS_RESULT 1
+#define ERROR_RESULT 0
 
 //DYNAMIC ARRAY
 
@@ -283,15 +295,17 @@ void check_if_free();
 #define array_back(array) ((array)->length - 1)
 
 
-#define array_for_each(length,i) for(size_t i = 0; i < length; ++i)
+#define for_each(length,i) for(size_t i = 0; i < length; ++i)
 
-// LOG
+
 
 #ifdef EASY_IMPLEMENATION
 
+// LOG
+
 void success_log(const char *string) 
 {
-    if(string == NULL) 
+    if(!string) 
     {
         fprintf(stderr,"\033[31m string equals NULL in (success_log) \33[0m\n"); 
         return;
@@ -302,7 +316,7 @@ void success_log(const char *string)
 
 void info_log(const char *string) 
 {
-    if(string == NULL) 
+    if(!string) 
     {
         fprintf(stderr,"\033[31m string equals NULL in (info_log) \33[0m\n"); 
         return;
@@ -313,7 +327,7 @@ void info_log(const char *string)
 
 void warning_log(const char *string) 
 {
-    if(string == NULL) 
+    if(!string) 
     {
         fprintf(stderr,"\033[31m string equals NULL in (warning_log) \33[0m\n"); 
         return;
@@ -324,7 +338,7 @@ void warning_log(const char *string)
 
 void error_log(const char *string) 
 {
-    if(string == NULL) 
+    if(!string) 
     {
         fprintf(stderr,"\033[31m string equals NULL in (error_log) \33[0m\n"); 
         return;
@@ -334,7 +348,7 @@ void error_log(const char *string)
 
 void check_if_null(const void *ptr) 
 {
-    if(ptr == NULL) 
+    if(!ptr) 
     {
         error_log("\nError: Pointer is NULL\n");
         exit(1);
@@ -350,13 +364,13 @@ void clear_stdin(void) {
 
 bool read_int(const char *string,int *p) 
 {
-    if(string == NULL) 
+    if(!string) 
     {
         error_log("string equals NULL in (read_int)");
         return false;
     }
 
-    else if(p == NULL) 
+    else if(!p) 
     {
         error_log("p equals NULL in (read_int)");
         return false;
@@ -382,13 +396,13 @@ bool read_int(const char *string,int *p)
 
 bool read_double(const char *string,double *p) 
 {
-    if(string == NULL) 
+    if(!string) 
     {
         error_log("string equals NULL in (read_double)");
         return false;
     }
 
-    else if(p == NULL) 
+    else if(!p) 
     {
         error_log("p equals NULL in (read_double)");
         return false;
@@ -413,13 +427,13 @@ bool read_double(const char *string,double *p)
 
 bool read_char(const char *string,char *p) 
 {
-    if(string == NULL) 
+    if(!string) 
     {
         error_log("string equals NULL in (read_char)");
         return false;
     }
 
-    else if(p == NULL) 
+    else if(!p) 
     {
         error_log("p equals NULL in (read_char)");
         return false;
@@ -438,13 +452,13 @@ bool read_char(const char *string,char *p)
 
 bool read_string(const char *string,char *p) 
 {
-    if(string == NULL) 
+    if(!string) 
     {
         error_log("string equals NULL in (read_string)");
         return false;
     }
 
-    else if(p == NULL) 
+    else if(!p) 
     {
         error_log("p equals NULL in (read_string)");
         return false;
@@ -538,10 +552,25 @@ double max_double(double array[],const size_t len)
     return max;
 }
 
+bool check_sign(int value) 
+{
+    if(value < 0) return false;
+    return true;
+}
+
 
 // datastructures
 
-string_view sv_dummy() 
+char_result char_error(void) 
+{
+    return (char_result) 
+    {
+        ERROR_RESULT,
+        0
+    };
+}
+
+string_view sv_dummy(void) 
 {
     return (string_view) 
     {
@@ -553,7 +582,7 @@ string_view sv_dummy()
 
 string_view sv_cstr(char *data) 
 {
-    if(data == NULL) 
+    if(!data) 
     {
         error_log("data equals NULL in (sv_cstr)");
         return sv_dummy();
@@ -568,13 +597,13 @@ string_view sv_cstr(char *data)
 
 void sv_set_string(string_view *str,char *data) 
 {
-    if(str == NULL) 
+    if(!str) 
     {
         error_log("str equals NULL in (sv_set_string)");
         return;
     }
 
-    else if(data == NULL) 
+    else if(!data) 
     {
         error_log("data equals NULL in (sv_string_set)");
         return;
@@ -592,15 +621,9 @@ void sv_set_string(string_view *str,char *data)
 
 void sv_swap_string(string_view *str,string_view *str2)
 {
-    if(str == NULL) 
+    if(!str || !str2) 
     {
-        error_log("str equals NULL in (sv_swap_string)");
-        return;
-    }
-
-    else if(str2 == NULL) 
-    {
-        error_log("str2 equals NULL in (sv_swap_string)");
+        error_log("str or str2 equals NULL in (sv_swap_string)");
         return;
     }
 
@@ -644,7 +667,7 @@ string_view sv_substr(string_view *str,const size_t pos_start,const size_t pos_e
         return sv_dummy();
     }
 
-    else if(str == NULL) 
+    else if(!str) 
     {
         error_log("str equals NULL in (sv_substr)");
         return sv_dummy();
@@ -655,6 +678,7 @@ string_view sv_substr(string_view *str,const size_t pos_start,const size_t pos_e
     string_view s;
     s.len = pos_end - pos_start;
     strncpy(s.data,str->data,pos_end);
+    s.data[s.len + 1] = '\0';
     return s;
 }
 	
@@ -662,7 +686,7 @@ string_view sv_substr(string_view *str,const size_t pos_start,const size_t pos_e
 
 void sv_chop_left(string_view *str,const size_t amount) 
 {
-    if(str == NULL) 
+    if(!str) 
     {
         error_log("str equals NULL in (sv_chop_left)");
         return;
@@ -682,7 +706,7 @@ void sv_chop_left(string_view *str,const size_t amount)
 
 void sv_chop_right(string_view *str,const size_t amount) 
 {
-    if(str == NULL) 
+    if(!str) 
     {
         error_log("str equals NULL in (sv_chop_left)");
         return;
@@ -698,51 +722,51 @@ void sv_chop_right(string_view *str,const size_t amount)
     str->len = len;
 }
 
-char sv_back(const string_view *str) 
+char_result sv_back(const string_view *str) 
 {
-    if(str == NULL) 
+    if(!str) 
     {
         error_log("str equals NULL in (sv_front)");
-        exit(1);
+        return char_error();
     }
 
-    return str->data[str->len - 1];
+    return (char_result) {SUCCESS_RESULT,str->data[str->len - 1]};
 }
 
-char sv_front(const string_view *str) 
+char_result sv_front(const string_view *str) 
 {
-    if(str == NULL) 
+    if(!str) 
     {
         error_log("str equals NULL in (sv_front)");
-        exit(1);
+        return char_error();
     }
 
-    return str->data[0];
+    return (char_result) {SUCCESS_RESULT,str->data[0]};
 }
 
 
 
 
-char sv_at(const string_view *str,const size_t index) 
+char_result sv_at(const string_view *str,const size_t index) 
 {
-    if(str == NULL) 
+    if(!str) 
     {
         error_log("str equals NULL in (sv_at)");
-        exit(1);
+        return char_error();
     }
     
     if(index >= str->len) 
     {
         error_log("index is greater or equal to str->len in (sv_at)");
-        exit(1);
+        return char_error();
     }
 
-    return str->data[index];
+    return (char_result) {SUCCESS_RESULT,str->data[index]};
 }
 
 bool sv_try_at(const string_view *str,const size_t index,char *out) 
 {
-    if(str == NULL || out == NULL) 
+    if(!str || !out) 
     {
         error_log("str or out equals NULL in (sv_try_at)");
         return false;
@@ -761,27 +785,27 @@ bool sv_try_at(const string_view *str,const size_t index,char *out)
 
 string *string_init(const char *data) 
 {
-    if(data == NULL) 
+    if(!data) 
     {
         error_log("data is equal to NULL (string_init)");
-        exit(1);
+        return NULL;
     }
     string *str = malloc(sizeof(string));
 
-    if(str == NULL) 
+    if(!str) 
     {
         error_log("str equals NULL from malloc error (string_init)");
-        exit(1);
+        return NULL;
     }
     size_t len = strlen(data);
 
     str->data = malloc(len * 2);
 
-    if(str->data == NULL) 
+    if(!str->data) 
     {
         free(str);
         error_log("data equals NULL from malloc error (string_init)");
-        exit(1);
+        return NULL;
     }
 
     strncpy(str->data,data,len);
@@ -794,21 +818,16 @@ string *string_init(const char *data)
     return str;
 }
 
-void string_set(string *str,const string *str2) 
+
+void string_set(string *str,string *str2) 
 {
-    if(str == NULL) 
+    if(!str || !str2) 
     {
-        error_log("str equals NULL in (string_set)");
-        return;
-    }
-    
-    else if(str2 == NULL) 
-    {
-        error_log("str2 equals NULL in (string_set)");
+        error_log("str or str2 equals NULL in (string_set)");
         return;
     }
 
-    if(str == str2) 
+    else if(str == str2) 
     {
         error_log("passed in the same pointers in (string_set)");
         return;
@@ -818,9 +837,31 @@ void string_set(string *str,const string *str2)
     str->data[str->length] = '\0';
 }
 
+
+void string_swap(string *str, string *str2) 
+{
+    if(!str || !str2) 
+    {
+        error_log("str or str2 equals NULL in (string_set)");
+        return;
+    }
+
+    else if(str == str2) 
+    {
+        error_log("passed in the same pointers in (string_set)");
+        return;
+    }
+    string *temp = string_init("");
+    string_set(temp,str);
+    string_set(str,str2);
+    string_set(str2,temp);
+    string_free(temp);
+}
+
+
 void string_clear(string *str) 
 {
-    if(str == NULL) 
+    if(!str) 
     {
         error_log("str equals NULL in (string_clear)");
         return;
@@ -834,7 +875,7 @@ void string_add(string *str,const char *data)
     if(str->length + len >= str->capacity) 
     {
         str->capacity *= 2;
-        void *p = realloc(p,str->capacity);
+        void *p = realloc(str->data,str->capacity);
 
         if(!p) 
         {
@@ -852,7 +893,7 @@ void string_push(string *str,const char element)
     if(str->length >= str->capacity) 
     {
         str->capacity *= 2;
-        void *p = realloc(p,str->capacity);
+        void *p = realloc(str->data,str->capacity);
 
         if(!p) 
         {
@@ -866,15 +907,15 @@ void string_push(string *str,const char element)
 
 void string_pop(string *str,const size_t amount) 
 {
-    if(str == NULL) 
+    if(!str) 
     {
         error_log("str equals NULL in (string_pop)");
         return;
     }
 
-    else if(str->length - amount <= 0) 
+    else if(str->length < amount) 
     {
-        error_log("str->len equals or is lesser then 0 in (string_pop)");
+        error_log("str->len is lesser then pop amount in (string_pop)");
         return;
     }
 
@@ -915,6 +956,16 @@ void string_remove(string *str,const size_t index)
     }
 
     array_remove(str,index);    
+}
+
+void resize_string(string *str,size_t capacity) 
+{
+    if(!str) 
+    {
+        error_log("str equals NULL in (resize_string)");
+        return;
+    }
+    resize_array(str,capacity);
 }
 
 void string_free(string *str) 
