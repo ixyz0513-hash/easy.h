@@ -54,8 +54,8 @@ string_view sv_cstr(char *data);
 void sv_set_string(string_view *str,char *data);
 void sv_swap_string(string_view *str,string_view *str2);
 string_view sv_substr(string_view *str,const size_t pos_start,const size_t pos_end);
-void sv_chop_left(string_view *str,const size_t amount);
 void sv_chop_right(string_view *str,const size_t amount);
+void sv_chop_left(string_view *str,const size_t amount);
 char_result sv_back(const string_view *str);
 char_result sv_front(const string_view *str);
 char_result sv_at(const string_view *str,const size_t index);
@@ -71,6 +71,7 @@ void string_insert(string *str,const size_t index,const char element);
 void string_remove(string *str,const size_t index);
 void resize_string(string *str,size_t capacity);
 void string_free(string *str);
+char *return_string(string *str);
 void check_if_free();
 
 #define PRINT_DEBUGSTR(str) printf("string: %s   length: %zu   capacity: %zu   element_size: %u\n",(str)->data,(str)->length,(str)->capacity,(str)->element_size);
@@ -561,6 +562,22 @@ bool check_sign(int value)
 
 // datastructures
 
+bool index_out_bounds(size_t index,size_t len,const char *string) 
+{
+    if(index < 0) 
+    {
+        fprintf(stderr,"\033[31m index is lesser then 0 in (%s) \033[0m\n",string);
+        return false;
+    }
+
+    else if(index >= len) 
+    {
+        fprintf(stderr,"\033[31m index is greater or equal to str->len in (%s) \033[0m\n",string);
+        return false;
+    }
+    return true;
+}
+
 char_result char_error(void) 
 {
     return (char_result) 
@@ -684,26 +701,6 @@ string_view sv_substr(string_view *str,const size_t pos_start,const size_t pos_e
 	
 	
 
-void sv_chop_left(string_view *str,const size_t amount) 
-{
-    if(!str) 
-    {
-        error_log("str equals NULL in (sv_chop_left)");
-        return;
-    }
-
-    else if(str->len < amount) 
-    {
-        error_log("str->len is lesser then amount in (sv_chop_right)");
-        return;
-    }
-
-    size_t len = str->len - amount;
-
-    str->data += amount;
-    str->len = len;
-}
-
 void sv_chop_right(string_view *str,const size_t amount) 
 {
     if(!str) 
@@ -712,14 +709,23 @@ void sv_chop_right(string_view *str,const size_t amount)
         return;
     }
 
-    else if(str->len < amount) 
+    if(!index_out_bounds(amount,str->len,"(sv_chop_left)")) return;
+
+    str->data += amount;
+    str->len -= amount;
+}
+
+void sv_chop_left(string_view *str,const size_t amount) 
+{
+    if(!str) 
     {
-        error_log("str->len is lesser then amount in (sv_chop_right)");
+        error_log("str equals NULL in (sv_chop_left)");
         return;
     }
 
-    size_t len = str->len - amount;
-    str->len = len;
+    if(!index_out_bounds(amount,str->len,"(sv_chop_right)")) return;
+
+    str->len -= amount;
 }
 
 char_result sv_back(const string_view *str) 
@@ -755,28 +761,22 @@ char_result sv_at(const string_view *str,const size_t index)
         return char_error();
     }
     
-    if(index >= str->len) 
-    {
-        error_log("index is greater or equal to str->len in (sv_at)");
-        return char_error();
-    }
+    if(!index_out_bounds(index,str->len,"(sv_at)")) return char_error();
+    
 
     return (char_result) {SUCCESS_RESULT,str->data[index]};
 }
 
 bool sv_try_at(const string_view *str,const size_t index,char *out) 
 {
-    if(!str || !out) 
+    if(!str || !out)
     {
         error_log("str or out equals NULL in (sv_try_at)");
         return false;
     }
     
-    if(index >= str->len) 
-    {
-        error_log("index is greater or equal to str->len in (sv_try_at)");
-        return false;
-    }
+    if(!index_out_bounds(index,str->len,"(sv_try_at)")) return false;
+        
 
     *out = str->data[index];
     return true;
@@ -913,11 +913,8 @@ void string_pop(string *str,const size_t amount)
         return;
     }
 
-    else if(str->length < amount) 
-    {
-        error_log("str->len is lesser then pop amount in (string_pop)");
-        return;
-    }
+    else if(!index_out_bounds(amount,str->length,"(string_pop)")) return;
+    
 
     str->length -= amount;
     str->data[str->length + 1] = '\0';
@@ -925,35 +922,14 @@ void string_pop(string *str,const size_t amount)
 
 void string_insert(string *str,const size_t index,const char element) 
 {
-    if(index < 0) 
-    {
-        error_log("index is lesser then 0 in (string_insert)");
-        return;
-    }
-
-    else if(index >= str->length) 
-    {
-        error_log("index is greater or equal to str->len in (string_insert)");
-        return;
-    }   
+    if(!index_out_bounds(index,str->length,"(string_insert)")) return;
 
     array_insert(str,index,element);
 }
 
 void string_remove(string *str,const size_t index) 
 {
-
-    if(index < 0) 
-    {
-        error_log("index is lesser then 0 in (string_remove)");
-        return;
-    }
-
-    else if(index >= str->length) 
-    {
-        error_log("index is greater or equal to str->len in (string_remove)");
-        return;
-    }
+    if(!index_out_bounds(index,str->length,"(string_remove)")) return;
 
     array_remove(str,index);    
 }
@@ -966,6 +942,18 @@ void resize_string(string *str,size_t capacity)
         return;
     }
     resize_array(str,capacity);
+}
+
+char_result string_at(string *str,size_t index) 
+{
+    if(!index_out_bounds(index,str->length,"string_at")) return char_error();
+
+    return (char_result) {SUCCESS_RESULT,str->data[index]};
+}
+
+char *return_string(string *str) 
+{
+    return str->data;
 }
 
 void string_free(string *str) 
@@ -981,4 +969,4 @@ void check_if_free()
 
 #endif
 
-#endif
+#endif  
