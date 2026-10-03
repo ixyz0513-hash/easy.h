@@ -49,6 +49,7 @@ int max_int(int array[],const size_t len);
 double max_double(double array[],const size_t len);
 bool check_sign(int value);
 char_result char_error();
+bool index_out_bounds(size_t index,size_t len,const char *string);
 string_view sv_dummy();
 string_view sv_cstr(char *data);
 void sv_set_string(string_view *str,char *data);
@@ -70,7 +71,7 @@ void string_pop(string *str,const size_t amount);
 void string_insert(string *str,const size_t index,const char element);
 void string_remove(string *str,const size_t index);
 void resize_string(string *str,size_t capacity);
-void string_free(string *str);
+void string_free(string **str);
 char *return_string(string *str);
 void check_if_free();
 
@@ -241,7 +242,12 @@ void check_if_free();
 {                                                                    \
     check_if_null(array);                                            \
     check_if_null((array)->data);                                    \
-    if(index < 0 || index > (array)->length) {                       \
+                                                                     \
+    if(index == 0) (array)->data[0] = value;                         \
+                                                                     \
+    else if(index == (array)->length - 1) (array)->data[(array)->length - 1] = value; \
+                                                                     \
+    else if(index > (array)->length) {                               \
         error_log("Error: Index out of bounds\n");                   \
         exit(1);                                                     \
     }                                                                \
@@ -257,7 +263,7 @@ void check_if_free();
     }                                                                \
     (array)->length += 1;                                            \
                                                                      \
-    for(long long i = (array)->length; i >= 0; --i) {                \
+    for(size_t i = (array)->length; i > 0; --i) {                    \
                                                                      \
         if(i == index) (array)->data[i] = value;                     \
                                                                      \
@@ -300,7 +306,7 @@ void check_if_free();
 
 
 
-#ifdef EASY_IMPLEMENATION
+#ifdef EASY_IMPLEMENTATION
 
 // LOG
 
@@ -371,12 +377,6 @@ bool read_int(const char *string,int *p)
         return false;
     }
 
-    else if(!p) 
-    {
-        error_log("p equals NULL in (read_int)");
-        return false;
-    }
-
     printf("%s",string);
 
     char buffer[1024];
@@ -403,12 +403,6 @@ bool read_double(const char *string,double *p)
         return false;
     }
 
-    else if(!p) 
-    {
-        error_log("p equals NULL in (read_double)");
-        return false;
-    }
-
     printf("%s",string);
 
     char buffer[1024];
@@ -431,12 +425,6 @@ bool read_char(const char *string,char *p)
     if(!string) 
     {
         error_log("string equals NULL in (read_char)");
-        return false;
-    }
-
-    else if(!p) 
-    {
-        error_log("p equals NULL in (read_char)");
         return false;
     }
 
@@ -471,10 +459,9 @@ bool read_string(const char *string,char *p)
     fgets(buffer,sizeof(buffer),stdin);
 
     size_t len = strlen(buffer);
+    buffer[len] = '\0';
 
-    buffer[len - 1] = '\0';
-
-    strncpy(p,buffer,len);
+    strcpy(p,buffer);
     
     return true;
 }
@@ -564,17 +551,12 @@ bool check_sign(int value)
 
 bool index_out_bounds(size_t index,size_t len,const char *string) 
 {
-    if(index < 0) 
-    {
-        fprintf(stderr,"\033[31m index is lesser then 0 in (%s) \033[0m\n",string);
-        return false;
-    }
-
-    else if(index >= len) 
+    if(index >= len) 
     {
         fprintf(stderr,"\033[31m index is greater or equal to str->len in (%s) \033[0m\n",string);
         return false;
     }
+
     return true;
 }
 
@@ -669,12 +651,6 @@ string_view sv_substr(string_view *str,const size_t pos_start,const size_t pos_e
     else if(str->len < pos_end) 
     {
         error_log("pos_end is greater then str->len in (sv_substr)");
-        return sv_dummy();
-    }
-
-    else if(pos_start < 0) 
-    {
-        error_log("pos_start is lesser then 0 in (sv_substr)");
         return sv_dummy();
     }
 
@@ -818,23 +794,39 @@ string *string_init(const char *data)
     return str;
 }
 
-
-void string_set(string *str,string *str2) 
+string *string_init_array(size_t *len,const char *data) 
 {
-    if(!str || !str2) 
+    string *p = string_init(data);
+    if(p) *len += 1;
+    return p;
+}
+
+
+void string_set(string *destination,string *source) 
+{
+    if(!destination || !source) 
     {
-        error_log("str or str2 equals NULL in (string_set)");
+        error_log("destination or source equals NULL in (string_set)");
         return;
     }
 
-    else if(str == str2) 
+    else if(destination == source) 
     {
         error_log("passed in the same pointers in (string_set)");
         return;
     }
 
-    array_set(str,str2);
-    str->data[str->length] = '\0';
+    array_set(destination,source);
+    destination->data[destination->length - 1] = '\0';
+}
+
+bool string_set_char(string *destination,char *source) 
+{
+    string *p = string_init(source);
+    if(!p) return false;
+    string_set(destination,p);
+    string_free(&p);
+    return true;
 }
 
 
@@ -851,11 +843,10 @@ void string_swap(string *str, string *str2)
         error_log("passed in the same pointers in (string_set)");
         return;
     }
-    string *temp = string_init("");
-    string_set(temp,str);
+    string *temp = string_init(str->data);
     string_set(str,str2);
     string_set(str2,temp);
-    string_free(temp);
+    string_free(&temp);
 }
 
 
@@ -956,9 +947,19 @@ char *return_string(string *str)
     return str->data;
 }
 
-void string_free(string *str) 
+size_t return_string_length(string *str) 
 {
-    free_array(str);
+    return str->length;
+}
+
+size_t return_string_capacity(string *str) 
+{
+    return str->capacity;
+}
+
+void string_free(string **str) 
+{
+    free_array(*str);
 }
 
 
