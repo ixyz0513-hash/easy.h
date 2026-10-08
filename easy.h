@@ -80,6 +80,7 @@ void check_if_free();
 #define PRINT_DEBUGSTR(str) printf("string: %s   length: %zu   capacity: %zu   element_size: %u\n",(str)->data,(str)->length,(str)->capacity,(str)->element_size);
 #define SUCCESS_RESULT 1
 #define ERROR_RESULT 0
+#define CHECK_NULL_ERROR -29345
 
 //DYNAMIC ARRAY
 
@@ -162,10 +163,10 @@ void check_if_free();
 
 #define array_set(destination,source)   do\
 {                                                                \
-    if(!check_if_null(destination)) break;                       \
-    else if(!check_if_null((destination)->data)) break;          \
-    else if(!check_if_null(source)) break;                       \
-    else if(!check_if_null((source)->data)) break;               \
+    if(check_if_null(destination)) break;                        \
+    else if(check_if_null((destination)->data)) break;           \
+    else if(check_if_null(source)) break;                        \
+    else if(check_if_null((source)->data)) break;                \
                                                                  \
     if(destination == source) break;                             \
                                                                  \
@@ -191,8 +192,8 @@ void check_if_free();
 
 #define array_reverse(array) do\
 {                                                                        \
-    if(!check_if_null(array)) break;                                     \
-    else if(!check_if_null((array)->data)) break;                        \
+    if(check_if_null(array)) break;                                      \
+    else if(check_if_null((array)->data)) break;                         \
                                                                          \
     else if((array)->length > 1)                                         \
     {                                                                    \
@@ -216,20 +217,9 @@ void check_if_free();
 
 #define array_insert(array,index,value) do\
 {                                                                    \
-    if(!check_if_null(array)) break;                                 \
-    if(!check_if_null((array)->data)) break;                         \
+    if(check_if_null(array)) break;                                  \
+    if(check_if_null((array)->data)) break;                          \
                                                                      \
-    if(index == 0)                                                   \
-    {                                                                \
-        (array)->data[0] = value;                                    \
-        break;                                                       \
-    }                                                                \
-                                                                     \
-    else if(index == (array)->length - 1)                            \
-    {                                                                \
-        (array)->data[(array)->length - 1] = value;                  \
-        break;                                                       \
-    }                                                                \
                                                                      \
     else if(index == (array)->length)                                \
     {                                                                \
@@ -237,7 +227,7 @@ void check_if_free();
         break;                                                       \
     }                                                                \
                                                                      \
-    else if(index > (array)->length) {                               \
+    else if(index > (array)->length || index < 0) {                  \
         error_log("Error: Index out of bounds\n");                   \
         break;                                                       \
     }                                                                \
@@ -253,12 +243,8 @@ void check_if_free();
     }                                                                \
     (array)->length += 1;                                            \
                                                                      \
-    for(size_t i = (array)->length; i > 0; --i) {                    \
-                                                                     \
-        if(i == index) (array)->data[i] = value;                     \
-                                                                     \
-        else if(i > index) (array)->data[i] = (array)->data[i - 1];  \
-    }                                                                \
+    for(size_t i = array->length; i > index; --i) (array)->data[i] = (array)->data[i - 1];  \
+    (array)->data[index] = value;                                      \
 }  while(0)
 
 #define array_remove(array,index) do\
@@ -489,7 +475,7 @@ double clamp_value_double(const double min,const double max,double target)
 
 int min_int(int array[],const size_t len) 
 {
-    check_if_null(array);
+    if(check_if_null(array)) return CHECK_NULL_ERROR;
 
     int min = array[0];
 
@@ -502,7 +488,7 @@ int min_int(int array[],const size_t len)
 
 double min_double(double array[],const size_t len) 
 {
-    check_if_null(array);
+    if(check_if_null(array)) return CHECK_NULL_ERROR;
 
     double min = array[0];
 
@@ -515,7 +501,7 @@ double min_double(double array[],const size_t len)
 
 int max_int(int array[],const size_t len) 
 {
-    check_if_null(array);
+    if(check_if_null(array)) return CHECK_NULL_ERROR;
 
     int max = array[0];
 
@@ -528,7 +514,7 @@ int max_int(int array[],const size_t len)
 
 double max_double(double array[],const size_t len) 
 {
-    check_if_null(array);
+    if(check_if_null(array)) return CHECK_NULL_ERROR;
 
     double max = array[0];
 
@@ -641,7 +627,13 @@ void sv_swap_string(string_view *str,string_view *str2)
 
 string_view sv_substr(string_view *str,const size_t pos_start,const size_t pos_end) 
 {
-    if(str->len <= pos_start) 
+    if(!str) 
+    {
+        error_log("str equals NULL in (sv_substr)");
+        return sv_dummy();
+    }
+
+    else if(str->len <= pos_start) 
     {
         error_log("pos_start is equal or greater then str->len in (sv_substr)");
         return sv_dummy();
@@ -659,19 +651,14 @@ string_view sv_substr(string_view *str,const size_t pos_start,const size_t pos_e
         return sv_dummy();
     }
 
-    else if(!str) 
-    {
-        error_log("str equals NULL in (sv_substr)");
-        return sv_dummy();
-    }
+    
 
     
-    str->data += pos_start;
-    string_view s;
-    s.len = pos_end - pos_start;
-    strncpy(s.data,str->data,pos_end);
-    s.data[s.len + 1] = '\0';
-    return s;
+    return (string_view)
+    {
+        .data = str->data + pos_start,
+        .len = pos_end - pos_start
+    };
 }
 	
 	
@@ -774,7 +761,7 @@ string *string_init(const char *data)
     }
     size_t len = strlen(data);
 
-    str->data = malloc(len * 2);
+    str->data = malloc(len * 2 + 1);
 
     if(!str->data) 
     {
@@ -784,7 +771,7 @@ string *string_init(const char *data)
     }
 
     strncpy(str->data,data,len);
-    str->capacity = len * 2;
+    str->capacity = len * 2 + 1;
     str->length = len;
     str->data[str->length] = '\0';
     str->element_size = 1;
@@ -816,7 +803,7 @@ void string_set(string *destination,string *source)
     }
 
     array_set(destination,source);
-    destination->data[destination->length - 1] = '\0';
+    destination->data[destination->length] = '\0';
 }
 
 bool string_set_char(string *destination,char *source) 
@@ -857,6 +844,7 @@ void string_clear(string *str)
         return;
     } 
     str->length = 0;
+    str->data[0] = '\0';
 }
 
 void string_add(string *str,const char *data) 
@@ -864,7 +852,7 @@ void string_add(string *str,const char *data)
     size_t len = strlen(data);
     if(str->length + len >= str->capacity) 
     {
-        str->capacity *= 2;
+        str->capacity = len * 2;
         void *p = realloc(str->data,str->capacity);
 
         if(!p) 
@@ -893,6 +881,8 @@ void string_push(string *str,const char element)
         str->data = p;
     }
     str->data[str->length] = element;
+    str->length += 1;
+    str->data[str->length] = '\0';
 }
 
 void string_pop(string *str,const size_t amount) 
@@ -907,13 +897,11 @@ void string_pop(string *str,const size_t amount)
     
 
     str->length -= amount;
-    str->data[str->length + 1] = '\0';
+    str->data[str->length] = '\0';
 }
 
 void string_insert(string *str,const size_t index,const char element) 
 {
-    if(!index_out_bounds(index,str->length,"(string_insert)")) return;
-
     array_insert(str,index,element);
 }
 
