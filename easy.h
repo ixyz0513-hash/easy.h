@@ -9,7 +9,7 @@
 #include <assert.h>
 #include <ctype.h>
 
-static unsigned short alloc_counter = 0;
+extern unsigned short alloc_counter;
 
 typedef struct
 {
@@ -73,6 +73,8 @@ void string_remove(string *str,const size_t index);
 void resize_string(string *str,size_t capacity);
 void string_free(string **str);
 char *return_string(string *str);
+size_t return_string_length(string *str);
+size_t return_string_capacity(string *str);
 void check_if_free();
 
 #define PRINT_DEBUGSTR(str) printf("string: %s   length: %zu   capacity: %zu   element_size: %u\n",(str)->data,(str)->length,(str)->capacity,(str)->element_size);
@@ -86,7 +88,7 @@ void check_if_free();
         T *data;                                                     \
         size_t capacity;                                             \
         size_t length;                                               \
-        uint8_t element_size;                                        \
+        size_t element_size;                                         \
     } name;                                                          \
                                                                      \
                                                                      \
@@ -107,35 +109,6 @@ void check_if_free();
         ++alloc_counter;                                             \
         return vec;                                                  \
     }
-
-
-
-#define char_arr_init(vec,string) do\
-{                                                                \
-    check_if_null(vec);                                          \
-    long long len;                                               \
-    if((len = strlen(string) + 1) == 0) len = 0;                 \
-    (vec)->length = len;                                         \
-    (vec)->element_size = sizeof(char);                          \
-                                                                 \
-    if(len == 0) (vec)->capacity = 1;                            \
-                                                                 \
-    else (vec)->capacity = len * 2;                              \
-                                                                 \
-    (vec)->data = malloc((vec)->capacity * (vec)->element_size); \
-    if(*(vec)->data)                                             \
-    {                                                            \
-        strcpy((vec)->data,string);                              \
-        ++alloc_counter;                                         \
-    }                                                            \
-                                                                 \
-    else                                                         \
-    {                                                            \
-        free(vec);                                               \
-        error_log("Error: Memory allocation failed\n");          \
-        exit(1);                                                 \
-    }                                                            \
-}   while(0)
     
 
 
@@ -243,13 +216,27 @@ void check_if_free();
     check_if_null(array);                                            \
     check_if_null((array)->data);                                    \
                                                                      \
-    if(index == 0) (array)->data[0] = value;                         \
+    if(index == 0)                                                   \
+    {                                                                \
+        (array)->data[0] = value;                                    \
+        break;                                                       \
+    }                                                                \
                                                                      \
-    else if(index == (array)->length - 1) (array)->data[(array)->length - 1] = value; \
+    else if(index == (array)->length - 1)                            \
+    {                                                                \
+        (array)->data[(array)->length - 1] = value;                  \
+        break;                                                       \
+    }                                                                \
+                                                                     \
+    else if(index == (array)->length)                                \
+    {                                                                \
+        push_back(array,value);                                      \
+        break;                                                       \
+    }                                                                \
                                                                      \
     else if(index > (array)->length) {                               \
         error_log("Error: Index out of bounds\n");                   \
-        exit(1);                                                     \
+        break;                                                       \
     }                                                                \
                                                                      \
     if((array)->length == (array)->capacity) {                       \
@@ -257,7 +244,7 @@ void check_if_free();
         void *p = realloc((array)->data,(array)->capacity * (array)->element_size);      \
         if(!p) {                                                     \
             error_log("Error: Memory allocation failed\n");          \
-            exit(1);                                                 \
+            break;                                                   \
         }                                                            \
         (array)->data = p;                                           \
     }                                                                \
@@ -275,10 +262,18 @@ void check_if_free();
 {                                                                                                    \
     check_if_null(array);                                                                            \
     check_if_null((array)->data);                                                                    \
-    if((array)->length != 0) {                                                                       \
-        for(size_t i = 0; i < (array)->length; ++i) if(i > index) (array)->data[i - 1] = (array)->data[i]; \
-        (array)->length -= 1;                                                                        \
+                                                                                                     \
+    if(!index_out_bounds(index,(array)->length,"failed index (array_remove)")) break;                \
+                                                                                                     \
+    else if(index == (array)->length - 1)                                                            \
+    {                                                                                                \
+        pop_back(array);                                                                             \
+        break;                                                                                       \
     }                                                                                                \
+                                                                                                     \
+    for(size_t i = 0; i < (array)->length; ++i) if(i > index) (array)->data[i - 1] = (array)->data[i]; \
+    (array)->length -= 1;                                                                            \
+                                                                                                     \
 } while(0)
 
 #define array_clear(array) do\
@@ -922,7 +917,8 @@ void string_remove(string *str,const size_t index)
 {
     if(!index_out_bounds(index,str->length,"(string_remove)")) return;
 
-    array_remove(str,index);    
+    array_remove(str,index);
+    str->data[str->length] = '\0';
 }
 
 void resize_string(string *str,size_t capacity) 
