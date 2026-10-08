@@ -35,7 +35,7 @@ void success_log(const char *string);
 void info_log(const char *string);
 void warning_log(const char *string);
 void error_log(const char *string);
-void check_if_null(const void *ptr);
+bool check_if_null(const void *ptr);
 void clear_stdin(void);
 bool read_int(const char *string,int *p);
 bool read_double(const char *string,double *p);
@@ -114,9 +114,10 @@ void check_if_free();
 
 #define resize_array(array,new_capacity) do\
 {                                                                            \
-    check_if_null(array);                                                    \
-    check_if_null((array)->data);                                            \
-    if(new_capacity != (array)->capacity)                                    \
+    if(check_if_null(array)) break;                                          \
+    else if(check_if_null((array)->data)) break;                             \
+                                                                             \
+    else if(new_capacity != (array)->capacity)                               \
     {                                                                        \
         if(new_capacity <= (array)->length) (array)->length = new_capacity;  \
                                                                              \
@@ -124,7 +125,7 @@ void check_if_free();
         void *p = realloc((array)->data,(array)->capacity * (array)->element_size);      \
         if(!p) {                                                             \
             error_log("Error: Memory allocation failed\n");                  \
-            exit(1);                                                         \
+            break;                                                           \
         }                                                                    \
         (array)->data = p;                                                   \
     }                                                                        \
@@ -133,14 +134,15 @@ void check_if_free();
 
 #define push_back(array,element) do\
 {                                                                \
-    check_if_null(array);                                        \
-    check_if_null((array)->data);                                \
-    if((array)->length == (array)->capacity) {                   \
+    if(check_if_null(array)) break;                              \
+    else if(check_if_null((array)->data)) break;                 \
+                                                                 \
+    else if((array)->length == (array)->capacity) {              \
         (array)->capacity *= 2;                                  \
         void *p = realloc((array)->data,(array)->capacity * (array)->element_size);      \
         if(!p) {                                                 \
             error_log("Error: Memory allocation failed\n");      \
-            exit(1);                                             \
+            break;                                               \
         }                                                        \
         (array)->data = p;                                       \
     }                                                            \
@@ -153,17 +155,17 @@ void check_if_free();
 
 #define pop_back(array) do \
 {                                                    \
-    check_if_null(array);                            \
-    if((array)->length != 0) (array)->length -= 1;   \
+    if(check_if_null(array)) break;                  \
+    else if((array)->length != 0) (array)->length -= 1;   \
 } while(0)
 
 
 #define array_set(destination,source)   do\
 {                                                                \
-    check_if_null(destination);                                  \
-    check_if_null((destination)->data);                          \
-    check_if_null(source);                                       \
-    check_if_null((source)->data);                               \
+    if(!check_if_null(destination)) break;                       \
+    else if(!check_if_null((destination)->data)) break;          \
+    else if(!check_if_null(source)) break;                       \
+    else if(!check_if_null((source)->data)) break;               \
                                                                  \
     if(destination == source) break;                             \
                                                                  \
@@ -172,7 +174,7 @@ void check_if_free();
                                                                  \
       if(!p) {                                                   \
         error_log("Error: Memory allocation failed\n");          \
-        exit(1);                                                 \
+        break;                                                   \
       }                                                          \
       (destination)->data = p;                                   \
     }                                                            \
@@ -189,9 +191,10 @@ void check_if_free();
 
 #define array_reverse(array) do\
 {                                                                        \
-    check_if_null(array);                                                \
-    check_if_null((array)->data);                                        \
-    if((array)->length > 1)                                              \
+    if(!check_if_null(array)) break;                                     \
+    else if(!check_if_null((array)->data)) break;                        \
+                                                                         \
+    else if((array)->length > 1)                                         \
     {                                                                    \
         size_t p1 = 0;                                                   \
         size_t p2 = (array)->length - 1;                                 \
@@ -213,8 +216,8 @@ void check_if_free();
 
 #define array_insert(array,index,value) do\
 {                                                                    \
-    check_if_null(array);                                            \
-    check_if_null((array)->data);                                    \
+    if(!check_if_null(array)) break;                                 \
+    if(!check_if_null((array)->data)) break;                         \
                                                                      \
     if(index == 0)                                                   \
     {                                                                \
@@ -260,8 +263,8 @@ void check_if_free();
 
 #define array_remove(array,index) do\
 {                                                                                                    \
-    check_if_null(array);                                                                            \
-    check_if_null((array)->data);                                                                    \
+    if(check_if_null(array)) break;                                                                  \
+    else if(check_if_null((array)->data)) break;                                                     \
                                                                                                      \
     if(!index_out_bounds(index,(array)->length,"failed index (array_remove)")) break;                \
                                                                                                      \
@@ -278,14 +281,14 @@ void check_if_free();
 
 #define array_clear(array) do\
 {                                                                \
-    check_if_null(array);                                        \
+    if(check_if_null(array)) break;                              \
     (array)->length = 0;                                         \
 } while(0)
 
 #define free_array(array) do\
 {                         \
-    check_if_null(array); \
-    check_if_null((array)->data); \
+    if(check_if_null(array)) break; \
+    else if(check_if_null((array)->data)) break; \
     free((array)->data);  \
     free(array);          \
     array = NULL;         \
@@ -348,13 +351,14 @@ void error_log(const char *string)
     fprintf(stderr,"\033[31m%s \33[0m\n",string); 
 }
 
-void check_if_null(const void *ptr) 
+bool check_if_null(const void *ptr) 
 {
     if(!ptr) 
     {
         error_log("\nError: Pointer is NULL\n");
-        exit(1);
+        return true;
     }
+    return false;
 }
 
 //INPUT
