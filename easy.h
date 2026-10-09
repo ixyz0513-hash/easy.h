@@ -852,7 +852,7 @@ void string_add(string *str,const char *data)
     size_t len = strlen(data);
     if(str->length + len >= str->capacity) 
     {
-        str->capacity = len * 2;
+        str->capacity = str->capacity * 2 + len;
         void *p = realloc(str->data,str->capacity);
 
         if(!p) 
