@@ -10,6 +10,7 @@
 #include <ctype.h>
 
 extern unsigned short alloc_counter;
+extern char *optarg;
 
 typedef struct
 {
@@ -71,10 +72,11 @@ void string_pop(string *str,const size_t amount);
 void string_insert(string *str,const size_t index,const char element);
 void string_remove(string *str,const size_t index);
 void resize_string(string *str,size_t capacity);
-void string_free(string **str);
 char *return_string(string *str);
 size_t return_string_length(string *str);
 size_t return_string_capacity(string *str);
+void string_free(string **str);
+char pr_getopt(int argc,char **argv,char *optstring);
 void check_if_free();
 
 #define PRINT_DEBUGSTR(str) printf("string: %s   length: %zu   capacity: %zu   element_size: %u\n",(str)->data,(str)->length,(str)->capacity,(str)->element_size);
@@ -948,6 +950,46 @@ size_t return_string_capacity(string *str)
 void string_free(string **str) 
 {
     free_array(*str);
+}
+
+char pr_getopt(int argc,char **argv,char *optstring) 
+{
+    static char *p;
+    static unsigned int length = 1;
+    static unsigned int counter = 0;
+    if(!p && argv[1][0] == '-') 
+    {
+        p = argv[1] + 1;
+    } 
+    
+    if(*p != '\0' && *p == optstring[counter]) 
+    {
+        char arg = *p;
+        ++counter;
+        ++p;
+        return arg;
+    }
+
+    else if(*p == '\0' && length < argc) 
+    {
+        ++length;
+        p = argv[length];
+        ++p;
+        return 0;
+    }
+
+    else if(optstring[counter] == ':') 
+    {
+        if(length < argc && argv[length][0] != '-') optarg = argv[length];
+
+        else optarg = "?";
+
+        ++counter;
+        return 0;
+    }
+    
+
+    return -1;
 }
 
 
