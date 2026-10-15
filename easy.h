@@ -291,6 +291,97 @@ void check_if_free();
 #define for_each(length,i) for(size_t i = 0; i < length; ++i)
 
 
+#define DEFINE_HASH_TABLE(NAME,T) \
+    typedef struct {              \
+        char key[100];            \
+        T data;                   \
+    } NAME;                       \
+
+
+size_t hs_hash(char *key,size_t max) 
+{
+    size_t result = 0;
+    size_t len = strlen(key);
+
+    for(size_t i = 0; i < len; ++i) result = (key[i] * 1232 + result) % max;
+    
+    return result;
+}
+
+#define hs_hash_insert(hash_table,hash,SIZE) do \
+{                                          \
+    if(check_if_null(hash_table)) break;   \
+    else if(check_if_null(hash)) break;    \
+                                           \
+    size_t index = hs_hash((hash)->key,SIZE);   \
+                                           \
+    if(!hash_table[index])                 \
+    {                                      \
+        if(!(hash_table[index] = malloc(sizeof(hash_table[index])))) \
+        {                                  \
+            error_log("malloc failed in (hs_hash_insert)"); \
+            break;                         \
+        }                                  \
+        strcpy(hash_table[index]->key,(hash)->key);  \
+        hash_table[index]->data = (hash)->data; \
+        ++alloc_counter;                   \
+    }                                      \
+}  while(0)
+
+
+#define hs_hash_delete(hash_table,name,SIZE) do \
+{                                    \
+    if(check_if_null(hash_table)) break;   \
+                                     \
+    size_t index = hs_hash(name,SIZE); \
+                                     \
+    if(hash_table[index] && !strncmp(hash_table[index]->key,name,strlen(name)))  \
+    {                                \
+        free(hash_table[index]);     \
+        hash_table[index] = NULL;    \
+        --alloc_counter;             \
+    }                                \
+}   while(0)
+
+
+#define hs_hash_lookup(hash_table,name,SIZE,hash) do \
+{                                    \
+    if(check_if_null(hash_table)) break; \
+                                     \
+    size_t index = hs_hash(name,SIZE);  \
+                                     \
+    if(hash_table[index] && !strncmp(hash_table[index]->key,name,strlen(name))) \
+    {                                \
+        strcpy((hash)->key,name);    \
+        (hash)->data = hash_table[index]->data; \
+    }                                \
+}   while(0)
+
+
+#define hs_hash_print(hash_table,SIZE) do \
+{                                         \
+    if(check_if_null(hash_table)) break;  \
+                                          \
+    for(size_t i = 0; i < SIZE; ++i) if(hash_table[i]) printf("number: %llu     key: %s\n",hash_table[i]->data,hash_table[i]->key); \
+                                          \
+}  while(0)
+
+#define hs_hash_free(hash_table,SIZE) do \
+{                                        \
+   if(check_if_null(hash_table)) break;  \
+                                         \
+   for(size_t i = 0; i < SIZE; ++i)      \
+   {                                     \
+        if(hash_table[i])                \
+        {                                \
+            free(hash_table[i]);         \
+            hash_table[i] = NULL;        \
+            --alloc_counter;             \
+        }                                \
+   }                                     \
+}  while(0)
+
+
 
 #ifdef EASY_IMPLEMENTATION
 
@@ -627,7 +718,7 @@ void sv_swap_string(string_view *str,string_view *str2)
 
 
 
-string_view sv_substr(string_view *str,const size_t pos_start,const size_t pos_end) 
+string_view sv_substr(string_view *str,const size_t pos_start,size_t pos_end) 
 {
     if(!str) 
     {
@@ -641,11 +732,8 @@ string_view sv_substr(string_view *str,const size_t pos_start,const size_t pos_e
         return sv_dummy();
     }
 
-    else if(str->len < pos_end) 
-    {
-        error_log("pos_end is greater then str->len in (sv_substr)");
-        return sv_dummy();
-    }
+    else if(str->len < pos_end) pos_end = str->len;
+    
 
     else if(pos_end <= pos_start) 
     {
@@ -654,13 +742,24 @@ string_view sv_substr(string_view *str,const size_t pos_start,const size_t pos_e
     }
 
     
-
-    
     return (string_view)
     {
         .data = str->data + pos_start,
         .len = pos_end - pos_start
     };
+}
+
+string_view sv_chrsubstr(char *str,const size_t pos_start,size_t pos_end) 
+{
+    if(!str) 
+    {
+        error_log("str is equal to NULL in (sv_chrsubstr)");
+        return sv_dummy();
+    }
+
+    string_view sv_str = sv_cstr(str);
+    string_view sv_chopstr = sv_substr(&sv_str,pos_start,pos_end);
+    return sv_chopstr;
 }
 	
 	
@@ -1000,4 +1099,4 @@ void check_if_free()
 
 #endif
 
-#endif  
+#endif
