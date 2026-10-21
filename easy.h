@@ -1,3 +1,27 @@
+/*
+MIT License
+
+Copyright (c) 2026 brownshark
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 #ifndef EASY_H
 #define EASY_H
 
@@ -64,6 +88,7 @@ char_result sv_at(const string_view *str,const size_t index);
 bool sv_try_at(const string_view *str,const size_t index,char *out);
 string *string_init(const char *data);
 void string_set(string *str,string *str2);
+bool string_set_char(string *destination,char *source);
 void string_swap(string *str, string *str2);
 void string_clear(string *str);
 void string_add(string *str,const char *data);
@@ -84,6 +109,16 @@ void check_if_free();
 #define ERROR_RESULT 0
 #define CHECK_NULL_ERROR -29345
 
+#define is_char_ptr(X) _Generic((X), \
+    char*: 1,                        \
+    const char*: 1,                  \
+    default: 0)
+
+#define is_str(X) _Generic((X), \
+    string: 1,                  \
+    string *: 1,                \
+    default: 0)
+
 //DYNAMIC ARRAY
 
 #define DEFINE_ARRAY(T,name)                                         \
@@ -92,7 +127,7 @@ void check_if_free();
         size_t capacity;                                             \
         size_t length;                                               \
         size_t element_size;                                         \
-    } name;                                                          \
+    } name                                                           \
                                                                      \
                                                                      \
     name *name##_init(const size_t capacity) {                       \
@@ -166,7 +201,6 @@ void check_if_free();
 #define array_set(destination,source)   do\
 {                                                                \
     if(check_if_null(destination)) break;                        \
-    else if(check_if_null((destination)->data)) break;           \
     else if(check_if_null(source)) break;                        \
     else if(check_if_null((source)->data)) break;                \
                                                                  \
@@ -185,9 +219,7 @@ void check_if_free();
     (destination)->capacity = (source)->capacity;                \
     (destination)->length = (source)->length;                    \
                                                                  \
-    for(size_t i = 0; i < (destination)->length; ++i) {          \
-        (destination)->data[i] = (source)->data[i];              \
-    }                                                            \
+    for(size_t i = 0; i < (destination)->length; ++i) (destination)->data[i] = (source)->data[i]; \
 }  while(0)
 
 
@@ -212,7 +244,6 @@ void check_if_free();
             --p2;                                                        \
         }                                                                \
     }                                                                    \
-                                                                         \
 }   while(0)
 
 
@@ -229,7 +260,7 @@ void check_if_free();
         break;                                                       \
     }                                                                \
                                                                      \
-    else if(index > (array)->length || index < 0) {                  \
+    else if(index > (array)->length) {                               \
         error_log("Error: Index out of bounds\n");                   \
         break;                                                       \
     }                                                                \
@@ -288,14 +319,11 @@ void check_if_free();
 #define array_back(array) ((array)->length - 1)
 
 
-#define for_each(length,i) for(size_t i = 0; i < length; ++i)
-
-
 #define DEFINE_HASH_TABLE(NAME,T) \
     typedef struct {              \
-        char key[100];            \
+        char key[300];            \
         T data;                   \
-    } NAME;                       \
+    } NAME                        \
 
 
 size_t hs_hash(char *key,size_t max) 
@@ -308,26 +336,45 @@ size_t hs_hash(char *key,size_t max)
     return result;
 }
 
-#define hs_hash_insert(hash_table,hash,SIZE) do \
+#define hs_hash_insert_str(hash_table,hash,SIZE) do \
 {                                          \
     if(check_if_null(hash_table)) break;   \
     else if(check_if_null(hash)) break;    \
                                            \
     size_t index = hs_hash((hash)->key,SIZE);   \
                                            \
-    if(!hash_table[index])                 \
+    if(!(hash_table)[index])                 \
     {                                      \
-        if(!(hash_table[index] = malloc(sizeof(hash_table[index])))) \
-        {                                  \
+        if(!((hash_table)[index] = malloc(sizeof((hash_table)[index])))) {    \
             error_log("malloc failed in (hs_hash_insert)"); \
             break;                         \
         }                                  \
-        strcpy(hash_table[index]->key,(hash)->key);  \
-        hash_table[index]->data = (hash)->data; \
+        strcpy((hash_table)[index]->key,(hash)->key);  \
+                                           \
+        (hash_table)[index]->data = string_init(""); \
+        string_set_char((hash_table)[index]->data,(hash)->data); \
         ++alloc_counter;                   \
     }                                      \
 }  while(0)
 
+#define hs_hash_insert(hash_table,hash,SIZE) do \
+{                                          \
+   if(check_if_null(hash_table)) break;    \
+   else if(check_if_null(hash)) break;     \
+                                           \
+   size_t index = hs_hash((hash)->key,SIZE);  \
+                                           \
+   if(!(hash_table)[index])                \
+   {                                       \
+        if(!((hash_table)[index] = malloc(sizeof((hash_table)[index])))) {    \
+            error_log("malloc failed in (hs_hash_insert)"); \
+            break;                         \
+        }                                  \
+        strcpy((hash_table)[index]->key,(hash)->key);  \
+        (hash_table)[index]->data = (hash)->data; \
+        ++alloc_counter;                   \
+   }                                       \
+}  while(0)
 
 #define hs_hash_delete(hash_table,name,SIZE) do \
 {                                    \
@@ -335,10 +382,12 @@ size_t hs_hash(char *key,size_t max)
                                      \
     size_t index = hs_hash(name,SIZE); \
                                      \
-    if(hash_table[index] && !strncmp(hash_table[index]->key,name,strlen(name)))  \
+    if((hash_table)[index] && !strcmp((hash_table)[index]->key,name))  \
     {                                \
-        free(hash_table[index]);     \
-        hash_table[index] = NULL;    \
+        if(is_str((hash_table)[index]->data)) string_free(&(hash_table)[index]->data); \
+                                     \
+        free((hash_table)[index]);   \
+        (hash_table)[index] = NULL;  \
         --alloc_counter;             \
     }                                \
 }   while(0)
@@ -350,10 +399,24 @@ size_t hs_hash(char *key,size_t max)
                                      \
     size_t index = hs_hash(name,SIZE);  \
                                      \
-    if(hash_table[index] && !strncmp(hash_table[index]->key,name,strlen(name))) \
+    if((hash_table)[index] && !strcmp((hash_table)[index]->key,name)) \
     {                                \
-        strcpy((hash)->key,name);    \
-        (hash)->data = hash_table[index]->data; \
+        strncpy((hash)->key,name,strlen(name));    \
+        (hash)->data = (hash_table)[index]->data; \
+    }                                \
+}   while(0)
+
+#define hs_hash_lookup_str(hash_table,name,SIZE,hash) do \
+{                                    \
+    if(check_if_null(hash_table)) break; \
+                                     \
+    size_t index = hs_hash(name,SIZE);  \
+                                     \
+    if((hash_table)[index] && !strcmp((hash_table)[index]->key,name)) \
+    {                                \
+        strncpy((hash)->key,name,strlen(name));    \
+        if(!(hash)->data) (hash)->data = string_init(""); \
+        string_set((hash)->data,(hash_table)[index]->data); \
     }                                \
 }   while(0)
 
@@ -362,8 +425,17 @@ size_t hs_hash(char *key,size_t max)
 {                                         \
     if(check_if_null(hash_table)) break;  \
                                           \
-    for(size_t i = 0; i < SIZE; ++i) if(hash_table[i]) printf("number: %llu     key: %s\n",hash_table[i]->data,hash_table[i]->key); \
+    for(size_t i = 0; i < SIZE; ++i)      \
+    {                                     \
+        if((hash_table)[i])               \
+        {                                 \
+            if(is_str((hash_table)[i]->data)) printf("str: %s      key: %s\n",return_string((hash_table)[i]->data),(hash_table)[i]->key); \
                                           \
+            else if(!is_char_ptr((hash_table)[i]->data)) printf("number: %llu     key: %s\n",(hash_table)[i]->data,(hash_table)[i]->key); \
+                                          \
+            else printf("str: %s     key: %s\n",(hash_table)[i]->data,(hash_table)[i]->key); \
+        }                                 \
+    }                                     \
 }  while(0)
 
 #define hs_hash_free(hash_table,SIZE) do \
@@ -372,10 +444,12 @@ size_t hs_hash(char *key,size_t max)
                                          \
    for(size_t i = 0; i < SIZE; ++i)      \
    {                                     \
-        if(hash_table[i])                \
+        if((hash_table)[i])              \
         {                                \
-            free(hash_table[i]);         \
-            hash_table[i] = NULL;        \
+            if(is_str((hash_table)[i]->data)) string_free(&(hash_table)[i]->data); \
+                                         \
+            free((hash_table)[i]);       \
+            (hash_table)[i] = NULL;      \
             --alloc_counter;             \
         }                                \
    }                                     \
@@ -1054,7 +1128,7 @@ void string_free(string **str)
 char pr_getopt(int argc,char **argv,char *optstring) 
 {
     static char *p;
-    static unsigned int length = 1;
+    static int length = 1;
     static unsigned int counter = 0;
     if(!p && argv[1][0] == '-') 
     {
@@ -1099,4 +1173,4 @@ void check_if_free()
 
 #endif
 
-#endif
+#endif  
